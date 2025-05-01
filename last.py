@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import torch
 import numpy as np
 import cv2
-from diffusers import StableDiffusionControlNetImg2ImgPipeline, ControlNetModel
+from diffusers import AutoPipelineForImage2Image
 from PIL import Image
 import io
 import uuid
@@ -23,27 +23,21 @@ async def lifespan(app: FastAPI):
     # Load models on startup
     global pipeline
     
-    # Load ControlNet models
-    controlnet_canny = ControlNetModel.from_pretrained(
-        "lllyasviel/control_v11p_sd15_canny",
-        torch_dtype=torch.float16
-    )
-    
-    controlnet_face = ControlNetModel.from_pretrained(
-        "lllyasviel/control_v11p_sd15_openpose",
-        torch_dtype=torch.float16
-    )
-    
-    # Load pipeline with standard Stable Diffusion instead of RunwayML
-    pipeline = StableDiffusionControlNetImg2ImgPipeline.from_pretrained(
-        "CompVis/stable-diffusion-v1-4",  # Standard Stable Diffusion model
-        controlnet=[controlnet_canny, controlnet_face],
-        torch_dtype=torch.float16,
-        safety_checker=None
+    # Load Kandinsky 2.2 pipeline
+    pipeline = AutoPipelineForImage2Image.from_pretrained(
+        "kandinsky-community/kandinsky-2-2-decoder", 
+        torch_dtype=torch.float16, 
+        use_safetensors=True
     )
     
     # Move to GPU and enable memory optimizations
     pipeline.enable_model_cpu_offload()
+    
+    # Enable memory efficient attention if xFormers is installed
+    try:
+        pipeline.enable_xformers_memory_efficient_attention()
+    except:
+        print("xFormers not available, using standard attention")
     
     yield
     
@@ -61,7 +55,7 @@ async def transform_image(
     """
     Transform an uploaded image using the selected style preset
     """
-    # Get prompt and negative prompt for the style
+    # Get prompt for the style
     if style in style_presets:
         prompt = style_presets[style]["prompt"]
         negative_prompt = style_presets[style]["negative_prompt"]
@@ -74,26 +68,40 @@ async def transform_image(
     image_data = await image.read()
     init_image = Image.open(io.BytesIO(image_data))
     
-    # Create canny edge map
-    init_image_np = np.array(init_image)
-    canny_image = cv2.Canny(init_image_np, 100, 200)
-    canny_image = canny_image[:, :, None]
-    canny_image = np.concatenate([canny_image, canny_image, canny_image], axis=2)
-    canny_image = Image.fromarray(canny_image)
+    # Create edge-enhanced version for sketch styles
+    if style == "Sketch":
+        # Pre-process the image to enhance edges for sketch style
+        init_image_np = np.array(init_image)
+        
+        # Convert to grayscale for edge detection
+        gray = cv2.cvtColor(init_image_np, cv2.COLOR_RGB2GRAY)
+        
+        # Apply edge detection
+        edges = cv2.Canny(gray, 100, 200)
+        
+        # Dilate edges to make them more prominent
+        kernel = np.ones((2, 2), np.uint8)
+        edges = cv2.dilate(edges, kernel, iterations=1)
+        
+        # Create a mask from edges
+        edge_mask = edges.astype(np.float32) / 255.0
+        
+        # Enhance contrast for sketch effect
+        alpha = 1.2  # Contrast control
+        beta = 10    # Brightness control
+        contrast_adjusted = cv2.convertScaleAbs(init_image_np, alpha=alpha, beta=beta)
+        
+        # Convert back to PIL
+        init_image = Image.fromarray(contrast_adjusted)
     
-    # Use the original image for face preservation
-    face_image = init_image
-    
-    # Generate the transformed image
+    # Generate the transformed image using Kandinsky
     result = pipeline(
         prompt=prompt,
-        negative_prompt=negative_prompt,
         image=init_image,
-        control_image=[canny_image, face_image],
-        controlnet_conditioning_scale=[0.8, 0.6],  # Increased edge control for sharper lines
-        guidance_scale=8.5,         # Slightly increased prompt adherence
-        strength=0.6,               # Keep the same strength
-        num_inference_steps=40,     # Quality
+        negative_prompt=negative_prompt,
+        guidance_scale=7.5,         # Control prompt adherence
+        strength=0.7,               # Control how much to preserve original image
+        num_inference_steps=50,     # Quality
         generator=torch.Generator().manual_seed(42)  # Reproducibility
     ).images[0]
     
