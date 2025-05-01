@@ -17,8 +17,8 @@ style_presets = {
         "negative_prompt": "photorealistic, watercolor, 3D render, western comic style, overly detailed background."
     },
     "Sketch": {
-    "prompt": "Detailed pencil sketch, hand-drawn, fine linework, shading, artistic, high contrast, black and white.",
-    "negative_prompt": "color, photorealistic, digital art, 3D, painting, watercolor, blur, cartoon style, flat shading."
-    }
+    "prompt": "Pure black and white pencil sketch, strong distinct line art, heavy contrast, detailed crosshatching, sharp edges.",
+    "negative_prompt": "color, sepia, soft edges, blurry lines, watercolor, gradient shading, photorealistic, subtle, painterly."
+}
 
 }
