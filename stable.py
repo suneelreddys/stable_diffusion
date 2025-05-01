@@ -92,7 +92,7 @@ async def transform_image(
         control_image=[canny_image, face_image],
         controlnet_conditioning_scale=[0.8, 0.6],  # Increased edge control for sharper lines
         guidance_scale=8.5,         # Slightly increased prompt adherence
-        strength=0.6,               # Keep the same strength
+        strength=0.45,               # Keep the same strength
         num_inference_steps=40,     # Quality
         generator=torch.Generator().manual_seed(42)  # Reproducibility
     ).images[0]
