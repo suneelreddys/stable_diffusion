@@ -1,8 +1,23 @@
-fastapi==0.95.1
-uvicorn[standard]==0.22.0
-diffusers[torch]==0.21.2
-transformers==4.30.2
-opencv-python==4.7.0.72
-Pillow==9.5.0
-numpy==1.24.3
-python-multipart==0.0.6
+# FastAPI and server dependencies
+fastapi>=0.104.0
+python-multipart>=0.0.6
+uvicorn>=0.23.2
+
+# PyTorch with CUDA support
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Image processing
+Pillow>=9.5.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# Diffusers for Stable Diffusion
+diffusers>=0.21.4
+transformers>=4.33.0
+accelerate>=0.23.0
+safetensors>=0.3.3
+
+# For file operations
+python-jose>=3.3.0
+uuid>=1.30
