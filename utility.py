@@ -13,7 +13,7 @@ style_presets = {
     },
     
     "Manga": {
-        "prompt": "Japanese manga style, clean line art, black and white, dramatic shading, expressive features.",
+        "prompt": "Generate a manga-style image based on the provided input image.Maintain all original content and elements from the input image while transforming it into a unique manga aesthetic.Ensure that the characteristics typical of manga art, such as line work, shading, and stylization, are applied without altering the original content or composition.The output should be a high-quality manga image that reflects the essence of the input image while showcasing the distinctive features of manga art.",
         "negative_prompt": "photorealistic, watercolor, 3D render, western comic style, overly detailed background."
     }
 }
